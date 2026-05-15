@@ -123,24 +123,30 @@ app.post("/api/github/push", async (req, res) => {
     });
 
     // 2. Initialize Git and Push
-    const runCommand = (cmd: string, args: string[]) => {
+    const remoteUrl = repo.clone_url.replace("https://", `https://x-access-token:${token}@`);
+    
+    // Write a basic .gitignore to avoid pushing large generated folders if created during testing
+    await fs.writeFile(path.join(sandboxPath, '.gitignore'), 'node_modules\n__pycache__\n.env\n');
+
+    const runScript = (script: string) => {
       return new Promise((resolve, reject) => {
-        const child = spawn(cmd, args, { cwd: sandboxPath });
-        child.on("close", (code) => code === 0 ? resolve(true) : reject(new Error(`${cmd} failed with code ${code}`)));
+        const child = spawn("sh", ["-c", script], { cwd: sandboxPath });
+        child.on("close", (code) => code === 0 ? resolve(true) : reject(new Error(`Git export failed with code ${code}`)));
       });
     };
 
-    await runCommand("git", ["init"]);
-    await runCommand("git", ["config", "user.email", "mini-devin@example.com"]);
-    await runCommand("git", ["config", "user.name", "Mini Devin"]);
-    await runCommand("git", ["add", "."]);
-    await runCommand("git", ["commit", "-m", "Initial commit from Mini Devin"]);
-    await runCommand("git", ["branch", "-M", "main"]);
+    const gitScript = `
+      git init && \\
+      git config user.email "mini-devin@example.com" && \\
+      git config user.name "Mini Devin" && \\
+      git add . && \\
+      git commit -m "Initial commit from Mini Devin" && \\
+      git branch -M main && \\
+      git remote add origin "${remoteUrl}" && \\
+      git push -u origin main
+    `;
     
-    // Use token in remote URL for authentication
-    const remoteUrl = repo.clone_url.replace("https://", `https://x-access-token:${token}@`);
-    await runCommand("git", ["remote", "add", "origin", remoteUrl]);
-    await runCommand("git", ["push", "-u", "origin", "main"]);
+    await runScript(gitScript);
 
     res.json({ success: true, url: repo.html_url });
   } catch (error: any) {

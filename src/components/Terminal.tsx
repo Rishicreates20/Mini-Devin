@@ -43,7 +43,10 @@ export const Terminal: React.FC<TerminalProps> = ({ onInit }) => {
       requestAnimationFrame(() => {
         try {
           if (terminalRef.current && terminalRef.current.clientWidth > 0) {
-            fitAddon.fit();
+            // Check if internal dimensions are ready to prevent "Cannot read properties of undefined (reading 'dimensions')"
+            if ((term as any)._core?._renderService?.dimensions) {
+              fitAddon.fit();
+            }
           }
         } catch (e) {
           // Ignore fit errors if terminal core isn't ready
