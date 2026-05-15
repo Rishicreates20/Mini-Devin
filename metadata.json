@@ -1,0 +1,5 @@
+{
+  "name": "Mini Devin",
+  "description": "An autonomous AI coding agent that plans, writes, executes, and debugs code.",
+  "requestFramePermissions": []
+}
